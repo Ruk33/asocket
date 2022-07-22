@@ -1,4 +1,4 @@
-ASYNC
+ASOCKET
   simple async socket for ipv4 (listening to localhost setting
   a port) or sock (ie, mysock.sock) intended to be used
   only in linux.
