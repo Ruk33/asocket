@@ -4,12 +4,11 @@
 #include "asocket.h"
 
 static char response[] = 
-"HTTP/1.1 404 Not Found\r\n"
-"Date: Sun, 18 Oct 2012 10:36:20 GMT\r\n"
-"Server: capo te conozco? atiendo bldos\r\n"
+"HTTP/1.1 200 OK\r\n"
+"Server: who knows?\r\n"
 "Content-Type: text/html; charset=iso-8859-1\r\n"
 "\r\n"
-"capo, quien te conoce?."
+"hello! this is my response."
 ;
 
 void handle_event(int socket,
@@ -33,7 +32,7 @@ void handle_event(int socket,
         int last_two = *((char *) read + len - 2) + *((char *) read + len - 1);
         if (last_two != '\r' + '\n')
             return;
-        printf("end of packet!\n\n\n");
+        printf("end of packet!\n\n");
         size_t written = asocket_write(socket, response, sizeof(response) - 1);
         printf("%ld sent\n\n", written);
         close(socket);
