@@ -30,7 +30,7 @@ void handle_event(int socket,
         printf("new bytes (%ld): %.*s.\n\n", len, (int)len, (char *) read);
         if (len < 2)
             return;
-        int last_two = *((char *) read - len - 2) + *((char *) read - len - 1);
+        int last_two = *((char *) read + len - 2) + *((char *) read + len - 1);
         if (last_two != '\r' + '\n')
             return;
         printf("end of packet!\n\n\n");
