@@ -47,7 +47,7 @@ void handle_event(int socket,
     }
 }
 
-int main(int argc, char **argv)
+int main(void)
 {
     int socket = asocket_port(3005);
     asocket_listen(socket, handle_event);
