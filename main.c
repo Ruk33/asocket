@@ -1,6 +1,4 @@
 #include <stdio.h> // printf
-#include <unistd.h> // close
-#include <sys/socket.h> // send
 #include "asocket.h"
 
 static char response[] = 
@@ -33,13 +31,14 @@ void handle_event(int socket,
         if (last_two != '\r' + '\n')
             return;
         printf("end of packet!\n\n");
-        size_t written = asocket_write(socket, response, sizeof(response) - 1);
-        printf("%ld sent\n\n", written);
-        close(socket);
         break;
         
         case ASOCKET_CAN_WRITE:
         printf("can write!\n");
+        unsigned long long written = asocket_write(socket, response, sizeof(response) - 1);
+        printf("%u sent\n\n", written);
+        printf("connection closed by server.\n");
+        asocket_close(socket);
         break;
         
         default:
@@ -49,7 +48,7 @@ void handle_event(int socket,
 
 int main(void)
 {
-    int socket = asocket_port(3005);
+    int socket = asocket_port(8080);
     asocket_listen(socket, handle_event);
     return 0;
 }

@@ -6,7 +6,7 @@
 #include <stddef.h>     // size_t
 #include <stdio.h>      // printf
 #include <sys/epoll.h>  // epoll_create1, epoll_wait, epoll_event, ...
-#include <sys/socket.h> // socket, bind, listen
+#include <sys/socket.h> // socket, bind, listen, send
 #include <sys/un.h>     // sockaddr_un
 #include <netinet/in.h> // sockaddr_in, INADDR_ANY, htons
 #include <unistd.h>     // unlink, close
@@ -40,7 +40,7 @@ int asocket_port(unsigned short port)
     
     return server;
     
-abort:
+    abort:
     print_err("asocket_port");
     close(server);
     return -1;
@@ -75,7 +75,7 @@ int asocket_sock(char *path)
     
     return server;
     
-abort:
+    abort:
     print_err("asocket_sock");
     close(server);
     return -1;
@@ -90,7 +90,7 @@ void asocket_listen(int server, asocket_handler *handler)
         printf("asocket error: no socket request handler provided.\n");
         return;
     }
-
+    
     int epoll_fd = 0;
     struct epoll_event event = {0};
     int ev_count = 0;
@@ -108,7 +108,7 @@ void asocket_listen(int server, asocket_handler *handler)
         ev_count = epoll_wait(epoll_fd, events, sizeof(events) / sizeof(*events), -1);
         if (ev_count == -1)
             goto abort;
-
+        
         for (int i = 0; i < ev_count; i += 1) {
             // only read and write, ignore the rest.
             if (!(events[i].events & EPOLLIN) &&
@@ -160,19 +160,19 @@ void asocket_listen(int server, asocket_handler *handler)
         }
     }
     
-abort:
+    abort:
     print_err("asocket_listen");
     close(epoll_fd);
     close(server);
 }
 
-size_t asocket_write(int socket, void *buf, size_t n)
+unsigned long long asocket_write(int socket, void *buf, unsigned long long n)
 {
-    size_t sent = 0;
+    unsigned long long sent = 0;
     if (!buf)
         return 0;
     while (sent < n) {
-        ssize_t tmp = send(socket, buf + sent, n - sent, 0);
+        long long tmp = send(socket, buf + sent, n - sent, 0);
         if (tmp == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
             break;
         if (tmp == -1) {
@@ -182,4 +182,9 @@ size_t asocket_write(int socket, void *buf, size_t n)
         sent += tmp;
     }
     return sent;
+}
+
+void asocket_close(int socket)
+{
+    close(socket);
 }

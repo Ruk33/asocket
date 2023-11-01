@@ -1,2 +1,2 @@
 @echo off
-wsl gcc -Wall -Wextra -Werror main.c asocket.c
+tcc main.c asocket_windows.c -lws2_32

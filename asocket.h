@@ -1,6 +1,3 @@
-#ifndef ASOCKET_H
-#define ASOCKET_H
-
 enum asocket_event {
     ASOCKET_NEW_CONN,
     ASOCKET_CLOSED,
@@ -9,7 +6,7 @@ enum asocket_event {
 };
 
 typedef void (asocket_handler)
-(int socket, enum asocket_event event, void *read, size_t len);
+(int socket, enum asocket_event event, void *read, unsigned long long len);
 
 // create a new socket for ipv4 assigned to a port.
 int asocket_port(unsigned short port);
@@ -21,7 +18,6 @@ void asocket_listen(int server, asocket_handler *handler);
 // of bytes that was able to send. if it writes
 // less than the intended amount, wait for ASOCKET_CAN_WRITE
 // to keep sending past the bytes already sent.
-size_t asocket_write(int socket, void *buf, size_t n);
-
-#endif //ASOCKET_H
-
+unsigned long long asocket_write(int socket, void *buf, unsigned long long n);
+// close the socket.
+void asocket_close(int socket);
