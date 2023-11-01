@@ -44,7 +44,6 @@ int asocket_sock(char *path)
 
 void asocket_listen(int server, asocket_handler *handler)
 {
-#define MAX_EVENTS 128
 #define MAX_CLIENTS 128
 #define MAX_BUF_SIZE 8192
     
@@ -68,7 +67,7 @@ void asocket_listen(int server, asocket_handler *handler)
             // the set, otherwise select will fail.
             int optval = 0;
             int optlen = sizeof(optval);
-            if (getsockopt(clients[i], SOL_SOCKET, SO_ERROR, (char*)&optval, &optlen) != SOCKET_ERROR && optval == 0) {
+            if (getsockopt(clients[i], SOL_SOCKET, SO_ERROR, (char*) &optval, &optlen) != SOCKET_ERROR && optval == 0) {
                 FD_SET(clients[i], &readfds);
                 FD_SET(clients[i], &writefds);
                 if (clients[i] > max_socket)
@@ -88,12 +87,22 @@ void asocket_listen(int server, asocket_handler *handler)
         if (FD_ISSET(server, &readfds)) {
             SOCKET new_client = accept(server, 0, 0);
             if (new_client != INVALID_SOCKET) {
+                int accepted = 0;
                 for (int i = 0; i < MAX_CLIENTS; i++) {
                     if (clients[i] == INVALID_SOCKET) {
+                        struct timeval timeout = {0};
+                        timeout.tv_sec = 0;
+                        timeout.tv_usec = 0;
+                        setsockopt(clients[i], SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
                         clients[i] = new_client;
                         handler(new_client, ASOCKET_NEW_CONN, 0, 0);
+                        accepted = 1;
                         break;
                     }
+                }
+                if (!accepted) {
+                    printf("can't accept new connection, maximum reached.\n");
+                    closesocket(new_client);
                 }
             }
         }
@@ -106,7 +115,8 @@ void asocket_listen(int server, asocket_handler *handler)
                 char buffer[MAX_BUF_SIZE] = {0};
                 int bytes_read = recv(clients[i], buffer, sizeof(buffer), 0);
                 if (bytes_read == SOCKET_ERROR) {
-                    printf("failed while reading\n");
+                    if (WSAGetLastError() != WSAEWOULDBLOCK)
+                        printf("failed while reading\n");
                 } else if (bytes_read == 0) {
                     // connection closed by client.
                     closesocket(clients[i]);
@@ -117,6 +127,7 @@ void asocket_listen(int server, asocket_handler *handler)
                     handler(clients[i], ASOCKET_READ, buffer, bytes_read);
                 }
             }
+            
             // write.
             if (FD_ISSET(clients[i], &writefds))
                 handler(clients[i], ASOCKET_CAN_WRITE, 0, 0);
