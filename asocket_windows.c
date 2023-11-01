@@ -69,8 +69,6 @@ void asocket_listen(int server, asocket_handler *handler)
         FD_ZERO(&writefds);
         FD_SET(server, &readfds);
         
-        SOCKET max_socket = server;
-        
         for (int i = 0; i < MAX_CLIENTS; i++) {
             if (clients[i] == INVALID_SOCKET)
                 continue;
@@ -81,8 +79,6 @@ void asocket_listen(int server, asocket_handler *handler)
             if (getsockopt(clients[i], SOL_SOCKET, SO_ERROR, (char*) &optval, &optlen) != SOCKET_ERROR && optval == 0) {
                 FD_SET(clients[i], &readfds);
                 FD_SET(clients[i], &writefds);
-                if (clients[i] > max_socket)
-                    max_socket = clients[i];
             } else {
                 clients[i] = INVALID_SOCKET; 
             }
@@ -94,19 +90,15 @@ void asocket_listen(int server, asocket_handler *handler)
             break;
         }
         
-        // new connection.
+        // accept new connections.
         if (FD_ISSET(server, &readfds)) {
-            SOCKET new_client = accept(server, 0, 0);
-            if (new_client != INVALID_SOCKET) {
+            while (1) {
+                SOCKET new_client = accept(server, 0, 0);
+                if (new_client == INVALID_SOCKET)
+                    break;
                 int accepted = 0;
                 for (int i = 0; i < MAX_CLIENTS; i++) {
                     if (clients[i] == INVALID_SOCKET) {
-#if 1
-                        struct timeval timeout = {0};
-                        timeout.tv_sec = 0;
-                        timeout.tv_usec = 0;
-                        setsockopt(clients[i], SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
-#endif
                         // set the client socket to non-blocking mode
                         u_long client_mode = 1;
                         if (ioctlsocket(new_client, FIONBIO, &client_mode) == SOCKET_ERROR) {
