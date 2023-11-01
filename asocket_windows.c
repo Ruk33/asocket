@@ -47,6 +47,11 @@ void asocket_listen(int server, asocket_handler *handler)
 #define MAX_CLIENTS 128
 #define MAX_BUF_SIZE 8192
     
+    if (!handler) {
+        printf("asocket error: no socket request handler provided.\n");
+        return;
+    }
+    
     SOCKET clients[MAX_CLIENTS];
     for (int i = 0; i < MAX_CLIENTS; i++)
         clients[i] = INVALID_SOCKET;
