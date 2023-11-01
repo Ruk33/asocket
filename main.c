@@ -14,30 +14,32 @@ void handle_event(int socket,
                   void *read,
                   size_t len)
 {
+    printf("NEW EVENT FROM %d\n", socket);
     switch (event) {
         case ASOCKET_NEW_CONN:
-        printf("oh! we got a new connection.\n");
+        printf("NEW CONNECTION.\n\n");
         break;
         
         case ASOCKET_CLOSED:
-        printf("well, the client closed the connection.\n");
+        printf("CONNECTION CLOSED BY THE CLIENT.\n\n");
         break;
         
         case ASOCKET_READ:
-        printf("new bytes (%ld): %.*s.\n\n", len, (int)len, (char *) read);
-        if (len < 2)
-            return;
-        int last_two = *((char *) read + len - 2) + *((char *) read + len - 1);
-        if (last_two != '\r' + '\n')
-            return;
-        printf("end of packet!\n\n");
+        printf("BYTES READ (%u):\n%.*s\n\n", (unsigned int) len, (int) len, (char *) read);
+        // this is just for html specs... ignore it.
+        // if (len < 2)
+        // return;
+        // int last_two = *((char *) read + len - 2) + *((char *) read + len - 1);
+        // if (last_two != '\r' + '\n')
+        // return;
+        // printf("END OF PACKET\n\n");
         break;
         
         case ASOCKET_CAN_WRITE:
-        printf("can write!\n");
+        printf("CAN WRITE\n");
         unsigned long long written = asocket_write(socket, response, sizeof(response) - 1);
-        printf("%u sent\n\n", written);
-        printf("connection closed by server.\n");
+        printf("%u sent\n\n", (unsigned int) written);
+        printf("connection closed by server.\n\n");
         asocket_close(socket);
         break;
         

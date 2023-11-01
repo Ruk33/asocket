@@ -16,6 +16,12 @@ int asocket_port(unsigned short port)
         return 0;
     }
     
+    u_long mode = 1; // 1 to enable non-blocking mode
+    if (ioctlsocket(server, FIONBIO, &mode) == SOCKET_ERROR) {
+        printf("failed to set server socket to nonblockingt\n");
+        return 0;
+    }
+    
     struct sockaddr_in server_addr = {0};
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -95,10 +101,19 @@ void asocket_listen(int server, asocket_handler *handler)
                 int accepted = 0;
                 for (int i = 0; i < MAX_CLIENTS; i++) {
                     if (clients[i] == INVALID_SOCKET) {
+#if 1
                         struct timeval timeout = {0};
                         timeout.tv_sec = 0;
                         timeout.tv_usec = 0;
                         setsockopt(clients[i], SOL_SOCKET, SO_RCVTIMEO, (char*) &timeout, sizeof(timeout));
+#endif
+                        // set the client socket to non-blocking mode
+                        u_long client_mode = 1;
+                        if (ioctlsocket(new_client, FIONBIO, &client_mode) == SOCKET_ERROR) {
+                            printf("unable to set new connection as nonblocking.\n");
+                            break;
+                        }
+                        
                         clients[i] = new_client;
                         handler(new_client, ASOCKET_NEW_CONN, 0, 0);
                         accepted = 1;
@@ -117,19 +132,23 @@ void asocket_listen(int server, asocket_handler *handler)
                 continue;
             // read.
             if (FD_ISSET(clients[i], &readfds)) {
-                char buffer[MAX_BUF_SIZE] = {0};
-                int bytes_read = recv(clients[i], buffer, sizeof(buffer), 0);
-                if (bytes_read == SOCKET_ERROR) {
-                    if (WSAGetLastError() != WSAEWOULDBLOCK)
-                        printf("failed while reading\n");
-                } else if (bytes_read == 0) {
-                    // connection closed by client.
-                    closesocket(clients[i]);
-                    clients[i] = INVALID_SOCKET;
-                    handler(clients[i], ASOCKET_CLOSED, 0, 0);
-                } else {
-                    // read.
-                    handler(clients[i], ASOCKET_READ, buffer, bytes_read);
+                while (1) {
+                    char buffer[MAX_BUF_SIZE] = {0};
+                    int bytes_read = recv(clients[i], buffer, sizeof(buffer), 0);
+                    if (bytes_read == SOCKET_ERROR) {
+                        if (WSAGetLastError() != WSAEWOULDBLOCK)
+                            printf("failed while reading.\n");
+                        break;
+                    } else if (bytes_read == 0) {
+                        // connection closed by client.
+                        closesocket(clients[i]);
+                        clients[i] = INVALID_SOCKET;
+                        handler(clients[i], ASOCKET_CLOSED, 0, 0);
+                        break;
+                    } else {
+                        // read.
+                        handler(clients[i], ASOCKET_READ, buffer, bytes_read);
+                    }
                 }
             }
             
